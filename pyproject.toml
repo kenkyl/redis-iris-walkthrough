@@ -46,6 +46,9 @@ module-name = "cairn_support"
 dotenv = [".env"]
 # Pick up edits to src/cairn_support without restarting the kernel.
 auto_reload = "lazy"
+# Run every cell when the notebook opens, so the prose renders. marimo 0.24.2 defaults this to false.
+# Writes and model calls still wait for their buttons (Create, Ask, Seed, Clean up).
+auto_instantiate = true
 
 [tool.marimo.display]
 # marimo edit caps every output at 610px and scrolls long code lines sideways. This file shows each output in full and sets Redis brand type and colours.
