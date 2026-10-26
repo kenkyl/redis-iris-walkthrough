@@ -9,7 +9,7 @@ For more Iris demos, see [redis/redis-iris-demos](https://github.com/redis/redis
 You need:
 
 - A Redis 8 database with Search and JSON. We recommend a free [Redis Cloud](https://cloud.redis.io) database.
-- An API key from one of the following providers: OpenAI, Anthropic, or Google AI Studio.
+- An API key from OpenAI, Anthropic, or Google AI Studio, set as `LLM_API_KEY` in `.env`. The notebook uses OpenAI's `gpt-4o-mini`. To use Claude or Gemini, set `AI_MODEL` in the notebook's first column to a `claude-…` or `gemini-…` model.
 - An embedding model (the [intro notebook](./notebooks/learn_iris_101.py) fetches a small model from HuggingFace).
 
 [Redis Search](https://redis.io/docs/latest/develop/ai/search-and-query/) runs in your database. You'll also set up three services, each with its own key in `.env`:

@@ -9,6 +9,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 1 | Markdown doesn't render until cells run | `pyproject.toml`: `auto_instantiate = true` |
 | 2 | Clean up everything is slow on a shared database | `crs_cleanup`: one pipelined `FT.INFO` round trip |
 | 3 | LangCache cleanup forgets entries after a kernel restart | None (suggestion only) |
+| 4 | Readers have to guess which LLM provider and model to use | `README.md`, `.env.example`: say where the key goes, the default model, and how to switch |
 
 ---
 
@@ -33,3 +34,10 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Cause:** LangCache can't list entries, so the notebook keeps the IDs it stored in `lcs_entries`, a dict in the kernel (`lc_connect`). A restart empties it.
 - **Impact:** Entries expire after 15 minutes. Until then, a fresh session's first **Ask** in Chapter 2 can come back as a hit, not the miss the lesson expects.
 - **Suggestion (no change in this PR):** Keep the IDs in a Redis hash, for example `cairn:20261021:langcache`, with the same 15-minute TTL, so a restarted kernel can still delete them. That's about three lines in `lc_connect`. The minimal alternative is one sentence in the cleanup text saying entries from before a restart expire within 15 minutes.
+
+### 4. Readers have to guess which LLM provider and model to use
+
+- **Seen:** The README names three providers but not the variable the key goes in, which model the notebook uses, or how to switch. An Anthropic or Gemini key fails at the first chat turn until you find `AI_MODEL` in the notebook.
+- **Cause:** The provider follows the model name (`src/cairn_support/llm.py`), and the model is hard-coded as `AI_MODEL = "gpt-4o-mini"` in the `ai_model` cell. `LLM_API_KEY` is also the only setting in `.env.example` without a comment.
+- **Change:** `README.md` and `.env.example` now say: put the key in `LLM_API_KEY`; the default is OpenAI's `gpt-4o-mini`; for Claude or Gemini, set `AI_MODEL` in the notebook.
+- **Suggestion (no change in this PR):** Read the model from `.env`, so every setting lives in one place: `AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")` in `ai_model` (which then takes `os`), plus an optional `AI_MODEL=` in `.env.example`. That also makes the settings panel's "`AI_MODEL` sets which" (`learn_iris_101.py:90`) accurate. Today it reads as if `AI_MODEL` were a `.env` setting.
