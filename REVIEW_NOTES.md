@@ -13,6 +13,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 5 | Chapter 1 search results appear before the reader acts | None (suggestion only) |
 | 6 | "Try it" boxes don't stand out from the prose | `theme-redis.css`: tint, thicker edge, bolder title |
 | 7 | No guide for readers going through it on their own | `README.md`: "How to use the notebook"; `.env.example`: `REDIS_URL` examples |
+| 8 | Few visuals | Architecture page and README overview; a diagram in the prologue and each chapter |
 
 ---
 
@@ -60,3 +61,11 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 
 - **Seen:** Without a live presenter, a reader has to work out the layout, which buttons do what, and why results can vanish (expiry).
 - **Change:** a short "How to use the notebook" section in `README.md`: the column layout, buttons, "Try it" boxes, hidden cells, restarting, expiry, and cleanup. `.env.example` now shows `REDIS_URL` examples for Redis Cloud, TLS, and local, noting that Chapter 3's hosted service can't reach a local database.
+
+### 8. Few visuals
+
+- **Seen:** The notebook is all text and tables. Many readers learn faster from a picture of the moving parts, and the chapters look alike at a glance.
+- **Change:**
+  - `docs/architecture/`: an architecture model and page, made with the visualizer plugin for Claude Code. It shows the app, your Redis, the three Iris services, the LLM, which credential goes where, and where state lives, plus three sequence diagrams (one support turn, cache-aside, creating a surface). The README gets an overview in a new "Architecture" section after the intro. To change it, edit `architecture.json` and re-render; don't edit the Mermaid by hand.
+  - Notebook: a small Mermaid flow in the prologue and after each chapter's opening story, drawn with `mo.mermaid` (marimo 0.24.2 shows mermaid code blocks in `mo.md` as plain code). Each title cell's `mo.md` is split in two around the diagram. No other text changes.
+- **Please check:** The diagrams were drawn from the notebook's own text and request lists. Confirm the flows, especially that LangCache and Agent Memory keep their indexes in the reader's database (seen in `FT._LIST` on a test database).

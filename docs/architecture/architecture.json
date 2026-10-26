@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "generator": "visualizer",
+    "schema_version": 1,
+    "model_sha": "b935b88e65330970cc84dd17833102835e5a6a67",
+    "model_date": "2026-10-26",
+    "reviewed_sha": "b935b88e65330970cc84dd17833102835e5a6a67",
+    "dirty": false,
+    "scope": ".",
+    "detail": "container",
+    "readme": {
+      "embed": true,
+      "path": "README.md",
+      "placement": "after-intro"
+    },
+    "notes": [
+      {
+        "text": "Generalized Redis Iris reference architecture for an AI support assistant, not the notebook's internals. Show: the app (the support assistant), the customer, the LLM provider (OpenAI, Anthropic, or Gemini), a local embedding model, the user's Redis database (Search + JSON), and the three hosted Redis Iris services: LangCache (semantic cache over HTTP), Context Retriever (tools over MCP, reads JSON records from the user's Redis), and Agent Memory (session + long-term memory). Show which credentials go where (.env keys) and where state lives. Keep it to one clear overview diagram plus a short README overview; skip marimo cells, cairn_support helper modules, and tests. Do not overwrite or reorder existing README sections; add the overview in a single new section.",
+        "added": "2026-10-26"
+      }
+    ]
+  },
+  "system": {
+    "name": "Redis Iris support assistant",
+    "summary": "An AI support assistant for a made-up outdoor-gear shop, built on Redis Iris one layer at a time. The app embeds each question on your machine and finds the closest help articles with Redis Search in your own database. Three hosted Iris services add to it: LangCache reuses answers to questions asked in other words, Context Retriever gives the model tools over the shop's JSON records, and Agent Memory keeps what each customer said. The LLM writes every answer from the context the app assembles.",
+    "highlights": [
+      "Every credential comes from `.env`: `REDIS_URL`, `LLM_API_KEY`, `LANGCACHE_API_KEY`, `CTX_ADMIN_KEY`, and `MEMORY_API_KEY`.",
+      "Creating a Context Retriever surface sends the database password from `REDIS_URL` to the hosted service, which keeps it until the surface is deleted.",
+      "The admin key only creates and deletes surfaces. Tool calls carry a separate agent key, which expires after 90 days.",
+      "The app's own Redis data expires: help articles and shop records after an hour, cached answers after 15 minutes.",
+      "Customers are kept apart by id: Agent Memory filters on `ownerId` before it ranks by meaning."
+    ]
+  },
+  "boundaries": [
+    {
+      "id": "local",
+      "name": "Your machine",
+      "kind": "local"
+    },
+    {
+      "id": "redis-cloud",
+      "name": "Your Redis Cloud account",
+      "kind": "cloud"
+    },
+    {
+      "id": "iris",
+      "name": "Redis Iris services",
+      "kind": "saas"
+    },
+    {
+      "id": "llm-provider",
+      "name": "LLM provider",
+      "kind": "saas"
+    }
+  ],
+  "components": [
+    {
+      "id": "customer",
+      "name": "Customer",
+      "kind": "client",
+      "tech": "Priya or Tom in the demo",
+      "responsibility": "Asks the support assistant about products, care, and their own orders.",
+      "evidence": [
+        "src/cairn_support/sample_data.py"
+      ]
+    },
+    {
+      "id": "support-app",
+      "name": "Support assistant app",
+      "kind": "service",
+      "boundary": "local",
+      "tech": "Python (marimo notebook)",
+      "responsibility": "Assembles each answer's context from search, cache, tools, and memory, and asks the LLM to write it.",
+      "evidence": [
+        "notebooks/learn_iris_101.py",
+        "src/cairn_support/"
+      ]
+    },
+    {
+      "id": "embedding-model",
+      "name": "Embedding model",
+      "kind": "module",
+      "boundary": "local",
+      "tech": "potion-base-8M, local",
+      "responsibility": "Turns questions and articles into 256-number vectors on your machine, with no API call.",
+      "evidence": [
+        "src/cairn_support/embedder.py"
+      ]
+    },
+    {
+      "id": "redis-db",
+      "name": "Your Redis database",
+      "kind": "datastore",
+      "boundary": "redis-cloud",
+      "tech": "Redis 8, Search and JSON",
+      "responsibility": "Holds the help center index and the shop's JSON records, and backs the Iris services' indexes.",
+      "evidence": [
+        "notebooks/learn_iris_101.py",
+        "src/cairn_support/redis_search_replies.py"
+      ],
+      "holds": [
+        {
+          "data": "Help articles with vectors (hashes)",
+          "lifetime": "1 hour"
+        },
+        {
+          "data": "Customers, products, orders (JSON)",
+          "lifetime": "1 hour"
+        },
+        {
+          "data": "LangCache and Agent Memory indexes",
+          "lifetime": "managed by each service"
+        }
+      ]
+    },
+    {
+      "id": "langcache",
+      "name": "LangCache",
+      "kind": "external",
+      "boundary": "iris",
+      "tech": "HTTP, Bearer API key",
+      "responsibility": "Semantic cache: returns a stored answer when a new question means the same thing.",
+      "evidence": [
+        "notebooks/learn_iris_101.py"
+      ]
+    },
+    {
+      "id": "context-retriever",
+      "name": "Context Retriever",
+      "kind": "external",
+      "boundary": "iris",
+      "tech": "MCP over HTTP",
+      "responsibility": "Turns a declared data model into tools and answers each tool call from the JSON records.",
+      "evidence": [
+        "notebooks/learn_iris_101.py"
+      ]
+    },
+    {
+      "id": "agent-memory",
+      "name": "Agent Memory",
+      "kind": "external",
+      "boundary": "iris",
+      "tech": "redis-agent-memory SDK",
+      "responsibility": "Keeps each chat as session memory and recalls each customer's long-term memories by meaning.",
+      "evidence": [
+        "notebooks/learn_iris_101.py",
+        "pyproject.toml"
+      ]
+    },
+    {
+      "id": "llm",
+      "name": "LLM",
+      "kind": "external",
+      "boundary": "llm-provider",
+      "tech": "OpenAI, Anthropic, Gemini",
+      "responsibility": "Writes each answer from the prompt the app assembles, calling tools when it needs records.",
+      "evidence": [
+        "src/cairn_support/llm.py"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "customer",
+      "to": "support-app",
+      "label": "asks a question",
+      "kind": "sync",
+      "step": 1
+    },
+    {
+      "from": "support-app",
+      "to": "agent-memory",
+      "label": "save message, recall",
+      "kind": "sync",
+      "step": 2
+    },
+    {
+      "from": "support-app",
+      "to": "embedding-model",
+      "label": "embed the question",
+      "kind": "sync",
+      "step": 3
+    },
+    {
+      "from": "support-app",
+      "to": "redis-db",
+      "label": "FT.SEARCH help articles",
+      "kind": "sync",
+      "step": 4
+    },
+    {
+      "from": "support-app",
+      "to": "context-retriever",
+      "label": "tool calls, agent key",
+      "kind": "sync",
+      "step": 5
+    },
+    {
+      "from": "support-app",
+      "to": "llm",
+      "label": "prompt, tools, results",
+      "kind": "sync",
+      "step": 6
+    },
+    {
+      "from": "support-app",
+      "to": "langcache",
+      "label": "search, store answers",
+      "kind": "sync"
+    },
+    {
+      "from": "support-app",
+      "to": "context-retriever",
+      "label": "admin key, DB password",
+      "kind": "auth"
+    },
+    {
+      "from": "context-retriever",
+      "to": "redis-db",
+      "label": "reads JSON records",
+      "kind": "sync"
+    },
+    {
+      "from": "langcache",
+      "to": "redis-db",
+      "label": "cache index",
+      "kind": "sync"
+    },
+    {
+      "from": "agent-memory",
+      "to": "redis-db",
+      "label": "memories, sessions",
+      "kind": "sync"
+    }
+  ],
+  "flows": [
+    {
+      "id": "support-turn",
+      "name": "One support turn",
+      "description": "Priya asks a question in a new chat (Chapter 4). Every layer adds to what the model sees.",
+      "steps": [
+        {"from": "customer", "to": "support-app", "msg": "Which sleeping bag should I get for the trip?", "kind": "call"},
+        {"from": "support-app", "to": "agent-memory", "msg": "save to session, recall her memories (ownerId filter)", "kind": "call"},
+        {"from": "agent-memory", "to": "support-app", "msg": "allergic to down, paddling in Maine in June", "kind": "return"},
+        {"from": "support-app", "to": "embedding-model", "msg": "embed the question", "kind": "call"},
+        {"from": "support-app", "to": "redis-db", "msg": "FT.SEARCH KNN over help articles", "kind": "call"},
+        {"from": "redis-db", "to": "support-app", "msg": "closest articles", "kind": "return"},
+        {"from": "support-app", "to": "context-retriever", "msg": "tools/list (agent key)", "kind": "call"},
+        {"from": "support-app", "to": "llm", "msg": "system prompt, chat, tools", "kind": "call"},
+        {"from": "llm", "to": "support-app", "msg": "tool call, or the answer", "kind": "return"},
+        {"from": "support-app", "to": "context-retriever", "msg": "tools/call for her orders", "kind": "call"},
+        {"from": "support-app", "to": "customer", "msg": "answer that remembers her", "kind": "return"}
+      ]
+    },
+    {
+      "id": "cache-aside",
+      "name": "Cache-aside answer",
+      "description": "A care question everyone asks (Chapter 2). A hit skips the model; a miss stores the new answer.",
+      "steps": [
+        {"from": "support-app", "to": "langcache", "msg": "POST /entries/search: prompt, similarityThreshold", "kind": "call"},
+        {"from": "langcache", "to": "support-app", "msg": "best entry above the threshold, or none", "kind": "return"},
+        {"from": "support-app", "to": "redis-db", "msg": "on a miss: FT.SEARCH for help articles", "kind": "call"},
+        {"from": "support-app", "to": "llm", "msg": "on a miss: question with those articles", "kind": "call"},
+        {"from": "support-app", "to": "langcache", "msg": "POST /entries: prompt, response, 15-minute TTL", "kind": "call"}
+      ]
+    },
+    {
+      "id": "create-surface",
+      "name": "Creating a Context Retriever surface",
+      "description": "Run once before tool calls (Chapter 3). This is where the database password leaves your machine.",
+      "steps": [
+        {"from": "support-app", "to": "context-retriever", "msg": "POST /context-surfaces: data model, REDIS_URL (admin key)", "kind": "call"},
+        {"from": "support-app", "to": "context-retriever", "msg": "POST agent-keys (admin key)", "kind": "call"},
+        {"from": "context-retriever", "to": "support-app", "msg": "agent key and mcp_url, 90-day expiry", "kind": "return"},
+        {"from": "support-app", "to": "context-retriever", "msg": "POST data: customers, products, orders", "kind": "call"},
+        {"from": "context-retriever", "to": "redis-db", "msg": "write JSON records and indexes", "kind": "call"}
+      ]
+    }
+  ]
+}
