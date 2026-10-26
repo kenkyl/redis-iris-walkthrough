@@ -6,7 +6,7 @@ app = marimo.App(width="columns", app_title="Redis Iris basics")
 
 @app.cell(column=0, hide_code=True)
 def prologue(CAST, mo):
-    mo.md(f"""
+    _story = mo.md(f"""
     # Learn Redis Iris
     ## by launching a new support assistant at Cairn Outfitters
 
@@ -25,11 +25,25 @@ def prologue(CAST, mo):
     2. **Semantic caching** (Redis LangCache, a hosted service) has a model write the answer from those articles, and reuses it when the question comes in other words. But a cache shared by everyone can't answer about Priya's own order.
     3. **Context engineering and retrieval** (Redis Context Retriever, a hosted service) gives the model Priya's orders and products through tools. But a week later, a new chat has forgotten what she told it.
     4. **Agent memory** (Redis Agent Memory, a hosted service) keeps what customers say and recalls it by meaning, so the assistant remembers Priya.
+    """)
 
+    _diagram = mo.mermaid("""
+    flowchart LR
+      customer(["Customer"]) --> app["Cairn's assistant"]
+      app -->|"Ch. 1: find articles"| db[("Your Redis<br/>Search and JSON")]
+      app -->|"Ch. 2: reuse answers"| lc["LangCache"]
+      app -->|"Ch. 3: call tools"| cr["Context Retriever"]
+      app -->|"Ch. 4: recall memories"| am["Agent Memory"]
+      app -->|"writes the answer"| llm{{"LLM"}}
+      cr --> db
+    """)
+
+    _run = mo.md("""
     ## How to run it
 
     Check the settings below first. Then work through the columns from left to right, one chapter each: the next chapter starts at the top of the column to the right. Each chapter builds on the last, so start with **Create** in Chapter 1. A chapter's buttons (**Create**, **Ask**, **Seed**) do its work. **Clean up everything** is at the end of Chapter 4. Cells that only run a request or draw a table hide their code, and the functions each chapter builds on show it.
     """)
+    mo.vstack([_story, _diagram, _run], gap=0.75)
     return
 
 
@@ -192,7 +206,16 @@ def rs_title(EMBEDDING_MODEL, HELP_ARTICLES, RS_IDX_NAME, RS_KEY_PREFIX, mo):
     - Priya then searches *Where is my parcel?*, because her tent hasn't arrived.
 
     **Redis Search** answers all three. It's an index over Redis keys that can match words, labels, numbers, and meaning. It runs inside your Redis database. You talk to it with Redis commands, which this chapter writes the way you'd type them into `redis-cli`, Redis's command-line tool. The notebook sends the same text from Python, so you never need a terminal.
+    """)
 
+    _diagram = mo.mermaid("""
+    flowchart LR
+      q(["Tom: my trail shoes feel cramped"]) --> e["Embedding model<br/>on this machine"]
+      e -->|"vector"| db[("Your Redis<br/>FT.SEARCH KNN")]
+      db --> a(["Closest articles"])
+    """)
+
+    _learn = mo.md(f"""
     ## You'll learn how to
 
     1. Declare an index, and see that writing a document indexes it.
@@ -285,7 +308,7 @@ def rs_title(EMBEDDING_MODEL, HELP_ARTICLES, RS_IDX_NAME, RS_KEY_PREFIX, mo):
         title="Try it",
     )
 
-    mo.vstack([_story, _schema, _key_idea, _write, _try_it, rs_create_button], gap=0.75)
+    mo.vstack([_story, _diagram, _learn, _schema, _key_idea, _write, _try_it, rs_create_button], gap=0.75)
     return rs_create_button, rss_create_command
 
 
@@ -668,7 +691,17 @@ def lc_title(mo):
     Priya wanted an answer, not a list of articles. So Cairn puts a model on top of Chapter 1: search the help center, then let the model write the answer from the articles. It works, but customers ask the same care questions in different words, and each one pays for a model call and the wait for it.
 
     **Redis LangCache** is a hosted cache that matches by meaning, and unlike Chapter 1's Redis commands, you call it over HTTP. It stores each answer under the question it answered, and a reworded question can reuse it.
+    """)
 
+    _diagram = mo.mermaid("""
+    flowchart LR
+      q(["Question"]) --> lc{"LangCache:<br/>a match by meaning?"}
+      lc -->|"hit"| a1(["Cached answer"])
+      lc -->|"miss"| db[("Redis Search<br/>help articles")] --> llm{{"LLM"}} --> a2(["New answer"])
+      a2 -->|"store with a TTL"| lc
+    """)
+
+    _learn = mo.md("""
     ## You'll learn how to
 
     1. Put a cache in front of the model: search it first, store the model's answer after, with a TTL (time to live). This is cache-aside.
@@ -772,6 +805,8 @@ def lc_title(mo):
     mo.vstack(
         [
             _intro,
+            _diagram,
+            _learn,
             mo.accordion({"The cache-aside path: who sends what to whom": _hops}),
             _requests,
             _key_idea,
@@ -979,7 +1014,7 @@ def lc_ends(mo):
 
 @app.cell(column=3, hide_code=True)
 def cr_title(CAIRN_SCOPE, mo):
-    mo.md(f"""
+    _story = mo.md(f"""
     # Chapter 3. Context engineering and retrieval: answer about her
 
     Chapter 2 ended on Priya's question, "Where's my tent?" A shared cache can't answer it, and neither can the help center, because the answer is in her order. Cairn keeps its customers, products, and orders in Redis as JSON documents. This chapter lets the assistant read them.
@@ -994,13 +1029,25 @@ def cr_title(CAIRN_SCOPE, mo):
     JSON.GET cairn:{CAIRN_SCOPE}:customer:C001
     {{"customer_id":"C001","lifetime_value":4200.0,"name":"Priya Shah","region":"amer","tier":"gold"}}
     ```
+    """)
 
+    _diagram = mo.mermaid("""
+    flowchart LR
+      q(["Priya: Where's my tent?"]) --> app["App"]
+      app <-->|"question, tools, results"| llm{{"LLM"}}
+      app <-->|"tool calls over MCP"| cr["Context Retriever"]
+      cr --> db[("Your Redis<br/>customers, orders, products")]
+      app --> a(["Answer about her order"])
+    """)
+
+    _learn = mo.md("""
     ## You'll learn how to
 
     1. Declare a data model, see that it decides the tools, and change it to fix a wrong answer.
     2. Tell the admin key, which makes the surface, from the agent key, which an agent sends with its tool calls.
     3. Assemble what the model sees: who is asking, which articles, and what the tools return.
     """)
+    mo.vstack([_story, _diagram, _learn], gap=0.75)
     return
 
 
@@ -1521,7 +1568,19 @@ def am_title(ams_client, mo):
     A week later, Priya opens a new chat and asks, "Which sleeping bag should I get for the trip?" Her orders don't say she's allergic to down feathers or that she's paddling in Maine in June. She told the assistant last week, and every chat starts empty, so it forgot.
 
     **Redis Agent Memory** keeps what customers say as **long-term memories**, one set per customer. Each turn writes the customer's message to **session memory**, recalls that customer's memories by meaning, and adds them to the context Chapter 3 built.
+    """)
 
+    _diagram = mo.mermaid("""
+    flowchart LR
+      q(["Priya's message"]) --> app["App"]
+      app <-->|"save to session, recall by meaning"| am["Agent Memory"]
+      app <-->|"help articles"| db[("Redis Search")]
+      app <-->|"tools"| cr["Context Retriever"]
+      app <-->|"prompt and answer"| llm{{"LLM"}}
+      app --> a(["Answer that remembers her"])
+    """)
+
+    _learn = mo.md(r"""
     ## You'll learn how to
 
     1. Keep each customer's memories apart with an `ownerId` filter that runs before ranking, the way Chapter 1's `@year` filter did.
@@ -1553,7 +1612,7 @@ def am_title(ams_client, mo):
 
     _try_it = mo.callout(mo.md("Press **Seed**. The tables under the buttons list Priya's four memories and Tom's three. Press it again and the counts stay the same, because a second **Seed** rewrites the same ids."), kind="success", title="Try it")
 
-    mo.vstack([_story, _try_it, mo.hstack([ams_seed_button, ams_refresh_button], justify="start")], gap=0.75)
+    mo.vstack([_story, _diagram, _learn, _try_it, mo.hstack([ams_seed_button, ams_refresh_button], justify="start")], gap=0.75)
     return ams_refresh_button, ams_seed_button
 
 
