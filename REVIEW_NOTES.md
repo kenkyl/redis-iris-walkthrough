@@ -10,6 +10,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 2 | Clean up everything is slow on a shared database | `crs_cleanup`: one pipelined `FT.INFO` round trip |
 | 3 | LangCache cleanup forgets entries after a kernel restart | None (suggestion only) |
 | 4 | Readers have to guess which LLM provider and model to use | `README.md`, `.env.example`: say where the key goes, the default model, and how to switch |
+| 5 | Chapter 1 search results appear before the reader acts | None (suggestion only) |
 
 ---
 
@@ -41,3 +42,9 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Cause:** The provider follows the model name (`src/cairn_support/llm.py`), and the model is hard-coded as `AI_MODEL = "gpt-4o-mini"` in the `ai_model` cell. `LLM_API_KEY` is also the only setting in `.env.example` without a comment.
 - **Change:** `README.md` and `.env.example` now say: put the key in `LLM_API_KEY`; the default is OpenAI's `gpt-4o-mini`; for Claude or Gemini, set `AI_MODEL` in the notebook.
 - **Suggestion (no change in this PR):** Read the model from `.env`, so every setting lives in one place: `AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")` in `ai_model` (which then takes `os`), plus an optional `AI_MODEL=` in `.env.example`. That also makes the settings panel's "`AI_MODEL` sets which" (`learn_iris_101.py:90`) accurate. Today it reads as if `AI_MODEL` were a `.env` setting.
+
+### 5. Chapter 1 search results appear before the reader acts
+
+- **Seen:** As soon as **Create** finishes, steps 2 to 4 (`KNN`, `VECTOR_RANGE`, the year filter) all show results, before the reader has done anything in those steps. It reads as though a click was skipped.
+- **Cause:** By design, these steps have no button. They rerun whenever the index has articles and the dropdown or a slider changes. Note 1's auto-run adds one case: opening the notebook within an hour of an earlier Create.
+- **Suggestion (no change in this PR):** Give each step a **Search** button that stays on after its first press, so the slider is still live afterwards: `mo.ui.button(value=0, on_click=lambda n: n + 1, label="Search")` plus `mo.stop(not button.value, hint)` in `rs_knn`, `rs_floor`, and `rs_filter`, and a short line in each "Try it". Avoid `mo.ui.run_button` here: it's only on for the run its press triggered, so moving the slider afterwards would hide the results. A lighter option is to start the step 2 dropdown empty, so all three steps wait for a pick.
