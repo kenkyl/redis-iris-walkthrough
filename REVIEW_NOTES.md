@@ -15,6 +15,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 7 | No guide for readers going through it on their own | `README.md`: "How to use the notebook"; `.env.example`: `REDIS_URL` examples |
 | 8 | Few visuals | Architecture page and README overview; a diagram in the prologue and each chapter |
 | 9 | No way to check you ran everything before cleanup | None (suggestion only) |
+| 10 | Clean up everything gives no progress while it runs | None (suggestion only) |
 
 ---
 
@@ -82,3 +83,9 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
   - Chapter 4: memories for Priya and Tom, and at least one chat turn (`ams_memories`, `ams_log`).
 
   Each line gets ✅ or "not yet: <the step to go back to>". Rerun after cleanup, the same cell confirms everything is gone, like a teardown check. That's about 20 lines with no new requests.
+
+### 10. Clean up everything gives no progress while it runs
+
+- **Seen:** After the press, the reader sees only marimo's hourglass until the summary appears, with no sign of what's happening or whether it's working.
+- **Cause:** `am_cleanup` runs four steps one after another (Context Retriever, Redis Search, LangCache, Agent Memory) and draws output only at the end.
+- **Suggestion (no change in this PR):** Wrap the steps in `with mo.status.spinner(title="Cleaning up everything") as _spinner:` and call `_spinner.update(subtitle="<service>: <what it's deleting>")` before each one. The spinner disappears at the end and the existing summary stays. That's about 15 lines in one cell. The same pattern fits Chapter 3's **Create** and Chapter 4's **Seed**.
