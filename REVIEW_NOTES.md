@@ -11,6 +11,8 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 3 | LangCache cleanup forgets entries after a kernel restart | None (suggestion only) |
 | 4 | Readers have to guess which LLM provider and model to use | `README.md`, `.env.example`: say where the key goes, the default model, and how to switch |
 | 5 | Chapter 1 search results appear before the reader acts | None (suggestion only) |
+| 6 | "Try it" boxes don't stand out from the prose | `theme-redis.css`: tint, thicker edge, bolder title |
+| 7 | No guide for readers going through it on their own | `README.md`: "How to use the notebook"; `.env.example`: `REDIS_URL` examples |
 
 ---
 
@@ -48,3 +50,13 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Seen:** As soon as **Create** finishes, steps 2 to 4 (`KNN`, `VECTOR_RANGE`, the year filter) all show results, before the reader has done anything in those steps. It reads as though a click was skipped.
 - **Cause:** By design, these steps have no button. They rerun whenever the index has articles and the dropdown or a slider changes. Note 1's auto-run adds one case: opening the notebook within an hour of an earlier Create.
 - **Suggestion (no change in this PR):** Give each step a **Search** button that stays on after its first press, so the slider is still live afterwards: `mo.ui.button(value=0, on_click=lambda n: n + 1, label="Search")` plus `mo.stop(not button.value, hint)` in `rs_knn`, `rs_floor`, and `rs_filter`, and a short line in each "Try it". Avoid `mo.ui.run_button` here: it's only on for the run its press triggered, so moving the slider afterwards would hide the results. A lighter option is to start the step 2 dropdown empty, so all three steps wait for a pick.
+
+### 6. "Try it" boxes don't stand out from the prose
+
+- **Seen:** The boxes that ask the reader to act look much like the text around them. Only the small title is styled.
+- **Change:** `notebooks/theme-redis.css` gives `.admonition.success` (used only for "Try it") a light tint of its green, a thicker left edge, slightly larger text, and a bold title. No notebook code changes.
+
+### 7. No guide for readers going through it on their own
+
+- **Seen:** Without a live presenter, a reader has to work out the layout, which buttons do what, and why results can vanish (expiry).
+- **Change:** a short "How to use the notebook" section in `README.md`: the column layout, buttons, "Try it" boxes, hidden cells, restarting, expiry, and cleanup. `.env.example` now shows `REDIS_URL` examples for Redis Cloud, TLS, and local, noting that Chapter 3's hosted service can't reach a local database.

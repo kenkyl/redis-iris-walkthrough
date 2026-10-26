@@ -52,6 +52,16 @@ You need:
 
 Fill in your .env prior to launching, or press **Restart kernel** in the first column.
 
+## How to use the notebook
+
+- **Read left to right.** Each column is a chapter. Scroll down a column, then move to the next one.
+- **Yellow buttons do the work.** Create, Ask, Seed, and Refresh send real requests. Red buttons delete.
+- **"Try it" boxes tell you what to do next.** Sliders and dropdowns update their results as soon as you change them.
+- **Hidden cells only run requests or draw tables.** Click the faded first line of code to see the whole cell. The functions each chapter builds stay visible.
+- **Changed `.env`?** Press **Restart kernel** in the first column.
+- **Things expire.** Help articles and Chapter 3's records last an hour, and cached answers 15 minutes. If a chapter says it found nothing, press **Create** again.
+- **When you're done,** press **Clean up everything** at the end of Chapter 4. The Context Retriever surface holds your database password and never expires.
+
 ---
 
 ## Want to explore with an Agent?
