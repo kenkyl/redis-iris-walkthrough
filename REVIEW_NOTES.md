@@ -8,6 +8,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 |:--|:--|:--|
 | 1 | Markdown doesn't render until cells run | `pyproject.toml`: `auto_instantiate = true` |
 | 2 | Clean up everything is slow on a shared database | `crs_cleanup`: one pipelined `FT.INFO` round trip |
+| 3 | LangCache cleanup forgets entries after a kernel restart | None (suggestion only) |
 
 ---
 
@@ -25,3 +26,10 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Seen:** Clean up everything sends `FT.INFO` to every index in the database, one at a time.
 - **Cause:** `crs_cleanup` (in `cr_lifecycle`) checks each index's prefixes so it can drop leftover Context Retriever indexes. Each check is its own round trip.
 - **Change:** one pipelined `FT.INFO` round trip. Same rule for what gets dropped, and still by name only. On a shared database with 118 indexes, the check went from 5.5 s to 0.3 s, with identical results.
+
+### 3. LangCache cleanup forgets entries after a kernel restart
+
+- **Seen:** After a kernel restart, **Clear** and **Clean up everything** report 0 LangCache entries deleted, and earlier entries stay in the cache.
+- **Cause:** LangCache can't list entries, so the notebook keeps the IDs it stored in `lcs_entries`, a dict in the kernel (`lc_connect`). A restart empties it.
+- **Impact:** Entries expire after 15 minutes. Until then, a fresh session's first **Ask** in Chapter 2 can come back as a hit, not the miss the lesson expects.
+- **Suggestion (no change in this PR):** Keep the IDs in a Redis hash, for example `cairn:20261021:langcache`, with the same 15-minute TTL, so a restarted kernel can still delete them. That's about three lines in `lc_connect`. The minimal alternative is one sentence in the cleanup text saying entries from before a restart expire within 15 minutes.
