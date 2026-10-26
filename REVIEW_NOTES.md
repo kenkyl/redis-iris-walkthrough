@@ -14,6 +14,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 6 | "Try it" boxes don't stand out from the prose | `theme-redis.css`: tint, thicker edge, bolder title |
 | 7 | No guide for readers going through it on their own | `README.md`: "How to use the notebook"; `.env.example`: `REDIS_URL` examples |
 | 8 | Few visuals | Architecture page and README overview; a diagram in the prologue and each chapter |
+| 9 | No way to check you ran everything before cleanup | None (suggestion only) |
 
 ---
 
@@ -69,3 +70,15 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
   - `docs/architecture/`: an architecture model and page, made with the visualizer plugin for Claude Code. It shows the app, your Redis, the three Iris services, the LLM, which credential goes where, and where state lives, plus three sequence diagrams (one support turn, cache-aside, creating a surface). The README gets an overview in a new "Architecture" section after the intro. To change it, edit `architecture.json` and re-render; don't edit the Mermaid by hand.
   - Notebook: a small Mermaid flow in the prologue and after each chapter's opening story, drawn with `mo.mermaid` (marimo 0.24.2 shows mermaid code blocks in `mo.md` as plain code). Each title cell's `mo.md` is split in two around the diagram. No other text changes.
 - **Please check:** The diagrams were drawn from the notebook's own text and request lists. Confirm the flows, especially that LangCache and Agent Memory keep their indexes in the reader's database (seen in `FT._LIST` on a test database).
+
+### 9. No way to check you ran everything before cleanup
+
+- **Seen:** At the end of Chapter 4, a reader working alone can't easily tell whether every step worked or what Clean up everything is about to remove. Presenting live, you can't tell whether the audience is in step either.
+- **What already exists:** settings that stop the notebook if missing, a hint in each step when its dependency is missing ("Press **Create** in step 1 first"), and each step's own status line. So a check after every chapter would repeat these. One check at the end would not.
+- **Suggestion (no change in this PR):** One read-only "Check your work" cell just before **Clean up everything**: a checklist built from state the notebook already has.
+  - Chapter 1: the index exists and holds articles (`FT.INFO`).
+  - Chapter 2: answers stored this session (`len(lcs_entries)`).
+  - Chapter 3: a surface exists and lists its tools (`crs_surface()`).
+  - Chapter 4: memories for Priya and Tom, and at least one chat turn (`ams_memories`, `ams_log`).
+
+  Each line gets ✅ or "not yet: <the step to go back to>". Rerun after cleanup, the same cell confirms everything is gone, like a teardown check. That's about 20 lines with no new requests.
