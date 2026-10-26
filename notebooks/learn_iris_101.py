@@ -885,7 +885,7 @@ def lc_answer_fn(
         # Search the cache before the model. A miss is 200 with data: [], never a 404.
         status, payload, _ = lcs_call("POST", "/entries/search", lcs_request(question, threshold))
         if status != 200:
-            raise RuntimeError(f"LangCache answered {status} ({(payload or {}).get('type', 'no JSON object')}) to the search")
+            raise RuntimeError(f"LangCache answered {status} to the search: {(payload or {}).get('detail') or (payload or {}).get('type', 'no JSON object')}")
 
         # A hit serves the best stored answer, and the model is never called.
         hits = payload["data"]

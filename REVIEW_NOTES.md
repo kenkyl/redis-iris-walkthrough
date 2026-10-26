@@ -16,6 +16,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 8 | Few visuals | Architecture page and README overview; a diagram in the prologue and each chapter |
 | 9 | No way to check you ran everything before cleanup | None (suggestion only) |
 | 10 | Clean up everything gives no progress while it runs | None (suggestion only) |
+| 11 | A LangCache outage shows only an error type | `lcs_answer`: the error shows LangCache's `detail` |
 
 ---
 
@@ -89,3 +90,10 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Seen:** After the press, the reader sees only marimo's hourglass until the summary appears, with no sign of what's happening or whether it's working.
 - **Cause:** `am_cleanup` runs four steps one after another (Context Retriever, Redis Search, LangCache, Agent Memory) and draws output only at the end.
 - **Suggestion (no change in this PR):** Wrap the steps in `with mo.status.spinner(title="Cleaning up everything") as _spinner:` and call `_spinner.update(subtitle="<service>: <what it's deleting>")` before each one. The spinner disappears at the end and the existing summary stays. That's about 15 lines in one cell. The same pattern fits Chapter 3's **Create** and Chapter 4's **Seed**.
+
+### 11. A LangCache outage shows only an error type
+
+- **Seen:** Chapter 2's **Ask** failed with `LangCache answered 424 (/errors/resource-unavailable) to the search`. A direct search got the same answer several times, then worked again with nothing changed.
+- **Cause:** The database behind the LangCache service was briefly unavailable. The error body says so in `title` and `detail` ("Cache Database Error", "Cache database is unavailable"), but the notebook printed only `type`.
+- **Change:** `lcs_answer` puts `detail` in the error, falling back to `type`: `LangCache answered 424 to the search: Cache database is unavailable`.
+- **Suggestion:** One line in the README's how-to: "If LangCache answers 424, its database is unavailable. Wait a minute and press Ask again."
