@@ -7,6 +7,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | # | Note | Change |
 |:--|:--|:--|
 | 1 | Markdown doesn't render until cells run | `pyproject.toml`: `auto_instantiate = true` |
+| 2 | Clean up everything is slow on a shared database | `crs_cleanup`: one pipelined `FT.INFO` round trip |
 
 ---
 
@@ -18,3 +19,9 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Side effects:** Opening the notebook now runs the settings check, the imports, the embedding model download (first open only) and a read-only `FT.INFO`. Writes, model calls and hosted-service actions still wait for Create, Ask, Seed, Clean up or a chat message. Two cells show existing data on open:
   - Chapter 1's three search steps show results if articles from an earlier Create haven't expired yet (they have a one-hour TTL).
   - Chapter 4's memory table lists what the store already holds for Priya and Tom.
+
+### 2. Clean up everything is slow on a shared database
+
+- **Seen:** Clean up everything sends `FT.INFO` to every index in the database, one at a time.
+- **Cause:** `crs_cleanup` (in `cr_lifecycle`) checks each index's prefixes so it can drop leftover Context Retriever indexes. Each check is its own round trip.
+- **Change:** one pipelined `FT.INFO` round trip. Same rule for what gets dropped, and still by name only. On a shared database with 118 indexes, the check went from 5.5 s to 0.3 s, with identical results.

@@ -1287,15 +1287,23 @@ def cr_lifecycle(
         for surface_id in ids:
             crs_admin("DELETE", f"/context-surfaces/{surface_id}", ok=(200, 204, 404))
         unlinked, dropped = REDIS_CLIENT.unlink(*crs_record_keys), []  # the service drops its indexes on DELETE but leaves the documents
-        for name in REDIS_CLIENT.execute_command("FT._LIST"):
-            try:
-                definition = REDIS_CLIENT.ft(name).info().get("index_definition", {})
-                prefixes = (definition if isinstance(definition, dict) else dict(zip(definition[::2], definition[1::2]))).get("prefixes", [])  # RESP3 or RESP2
-                if prefixes and all(prefix in crs_entity_prefixes for prefix in prefixes):
+        names = REDIS_CLIENT.execute_command("FT._LIST")
+        with REDIS_CLIENT.pipeline(transaction=False) as pipe:  # one round trip, however many indexes a shared database holds
+            for name in names:
+                pipe.execute_command("FT.INFO", name)
+            infos = pipe.execute(raise_on_error=False)  # an index dropped since FT._LIST comes back as an error
+        for name, info in zip(names, infos):
+            if isinstance(info, Exception):
+                continue
+            info = info if isinstance(info, dict) else dict(zip(info[::2], info[1::2]))  # RESP3 or RESP2, here and below
+            definition = info.get("index_definition", {})
+            prefixes = (definition if isinstance(definition, dict) else dict(zip(definition[::2], definition[1::2]))).get("prefixes", [])
+            if prefixes and all(prefix in crs_entity_prefixes for prefix in prefixes):
+                try:
                     REDIS_CLIENT.ft(name).dropindex(delete_documents=False)
                     dropped.append(name)
-            except redis.ResponseError:  # dropped between the two commands
-                continue
+                except redis.ResponseError:  # dropped between the two commands
+                    continue
         crs_set_surface(None)
         return f"Surfaces deleted: {len(ids)}; record keys unlinked: {unlinked} of {len(crs_record_keys)}; leftover indexes dropped: {len(dropped)}."
 
