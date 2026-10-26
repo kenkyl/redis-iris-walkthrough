@@ -84,8 +84,11 @@
 .admonition.warning { --admonition-heading-color: var(--iris-warn); }
 .admonition.danger { --admonition-heading-color: var(--iris-danger); }
 
-/* "Try it" set as redis.io sets an eyebrow: Space Mono, upper case, 1.5px apart. The brand keeps eyebrows short, so the longer Key idea and Watch out titles stay in sentence case. */
-.admonition.success .admonition-title { font-family: var(--monospace-font); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 400; font-size: 0.875em; }
+/* "Try it" is the one callout that asks the reader to act, so it stands out: a tint of its green, a thicker edge, and slightly larger text. */
+.admonition.success { background: color-mix(in srgb, var(--iris-ok) 8%, var(--background)); border-left-width: 6px; font-size: 1.05em; }
+
+/* "Try it" set as redis.io sets an eyebrow: Space Mono, upper case, 1.5px apart, here in bold. The brand keeps eyebrows short, so the longer Key idea and Watch out titles stay in sentence case. */
+.admonition.success .admonition-title { font-family: var(--monospace-font); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; font-size: 1em; }
 
 /* The notebook's buttons as the brand guide draws a call to action. Create, Ask, Seed, and Refresh are Yellow with Midnight text and a 1px border, and turn Midnight under the pointer, as redis.io's Yellow buttons do. The danger buttons are red outlines, so red still means danger. Colours stay out of a Windows contrast theme, which keeps marimo's system colours. */
 @media not (forced-colors: active) {
