@@ -1180,6 +1180,7 @@ def cr_create(
     crs_cleanup_button,
     crs_create_button,
     crs_create_surface,
+    crs_data_model,
     crs_list_tools,
     crs_record_keys,
     crs_set_surface,
@@ -1187,14 +1188,16 @@ def cr_create(
     crs_surface,
     json,
     mo,
+    recording,
 ):
     # Create and Clean up, then the current state. This cell never reads the state getter, so storing the surface doesn't rerun it.
-    _surface, _note = crs_surface(), ""
+    _surface, _note, _sent = crs_surface(), "", []
     if crs_create_button.value:
         if _surface:
             _note = "This kernel already holds a surface. Press **Clean up** first, so a second one never takes your password."
         else:
-            _surface = crs_create_surface()
+            with recording() as _sent:
+                _surface = crs_create_surface()
             crs_set_surface(_surface)
     if crs_cleanup_button.value:
         _note, _surface = crs_cleanup(), None
@@ -1204,7 +1207,13 @@ def cr_create(
     _signatures = [f"{t['name']}({', '.join(a + '*' * (a in t['inputSchema'].get('required', [])) for a in t['inputSchema'].get('properties', {}))})" for t in _tools]
     _listing = mo.md(f"{_note}\n\n- Surface `{_shown['id']}`. Imported {', '.join(f'{n} {name.lower()}s' for name, n in _surface['imports'].items())}.\n- Agent key `{_shown['agent_key']}`, expires {_shown['key_expires_at']}. Its `mcp_url` is `{_shown['mcp_url']}`.\n- `tools/list` returned {len(_tools)} tools, {len(json.dumps(_tools)):,} characters of JSON. Required arguments are starred.\n\n```text\n" + "\n".join(_signatures) + "\n```")
     _record = mo.md(f"`JSON.GET {crs_record_keys[0]}`\n\n```json\n{json.dumps(REDIS_CLIENT.json().get(crs_record_keys[0]), indent=2)}\n```")
-    mo.vstack([_listing, _record], gap=0.75)
+
+    # What this press sent, without bodies: the create body holds the password, and the agent key's reply holds the key.
+    _requests = [f"{x.method} {x.path}" + (f"  {x.body['entity']}, {len(x.body['records'])} records" if x.path.endswith("/data") else "") + f"  → HTTP {x.status}, {x.ms} ms" for x in _sent]
+    _sent_md = mo.md("**Create sent**\n\n```text\n" + "\n".join(_requests) + "\n```") if _sent else mo.md("")
+    _fields = [f"| {e['name']} | {f['name']} | {f['type']} | {', '.join(i['type'] for i in f['redis_indices']) or '-'} | {'yes' if f['is_key_component'] else ''} |" for e in crs_data_model["entities"] for f in e["fields"]]
+    _model = mo.accordion({"The data_model Create sent": mo.md("\n".join(["| entity | field | type | index | key |", "|:--|:--|:--|:--|:--|", *_fields]))})
+    mo.vstack([_listing, _sent_md, _model, _record], gap=0.75)
     return
 
 

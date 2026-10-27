@@ -17,6 +17,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 9 | No way to check you ran everything before cleanup | None (suggestion only) |
 | 10 | Clean up everything gives no progress while it runs | None (suggestion only) |
 | 11 | A LangCache outage shows only an error type | `lcs_answer`: the error shows LangCache's `detail` |
+| 12 | Chapter 3's Create doesn't show what it sent | `cr_create`: the requests Create made, and the data_model's fields |
 
 ---
 
@@ -97,3 +98,8 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Cause:** The database behind the LangCache service was briefly unavailable. The error body says so in `title` and `detail` ("Cache Database Error", "Cache database is unavailable"), but the notebook printed only `type`.
 - **Change:** `lcs_answer` puts `detail` in the error, falling back to `type`: `LangCache answered 424 to the search: Cache database is unavailable`.
 - **Suggestion:** One line in the README's how-to: "If LangCache answers 424, its database is unavailable. Wait a minute and press Ask again."
+
+### 12. Chapter 3's Create doesn't show what it sent
+
+- **Seen:** After **Create**, the result shows the surface, the agent key and the tool list, but not the requests behind them or the data model that went out. Step 2's text describes them, but the reader can't see them.
+- **Change:** `cr_create` runs `crs_create_surface()` inside `recording()`, like Chapter 2's **Ask**. The result then lists each request with its status and time, plus entity and record count for the imports. An accordion, "The data_model Create sent", holds an entity | field | type | index | key table built from `crs_data_model`. No request or reply bodies are shown: the create body holds the database password, and the agent key's reply holds the key.
