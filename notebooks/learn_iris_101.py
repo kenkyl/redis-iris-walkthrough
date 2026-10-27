@@ -1619,10 +1619,33 @@ def am_title(ams_client, mo):
     **Seed** writes four memories for Priya and three for Tom with `POST /long-term-memory`. **Refresh** lists them again, including any the service extracted in the background after a chat turn.
     """)
 
-    _try_it = mo.callout(mo.md("Press **Seed**. The tables under the buttons list Priya's four memories and Tom's three. Press it again and the counts stay the same, because a second **Seed** rewrites the same ids."), kind="success", title="Try it")
+    _try_it = mo.callout(mo.md("Press **Seed**. The tables under the buttons list Priya's four memories and Tom's three. Press it again and the counts and the **id** column stay the same, because a second **Seed** rewrites the same ids."), kind="success", title="Try it")
 
     mo.vstack([_story, _diagram, _learn, _try_it, mo.hstack([ams_seed_button, ams_refresh_button], justify="start")], gap=0.75)
     return ams_refresh_button, ams_seed_button
+
+
+@app.cell(hide_code=True)
+async def am_store(
+    CAST,
+    ams_memories,
+    ams_refresh_button,
+    ams_seed,
+    ams_seed_button,
+    mo,
+):
+    # Seed writes the memories. Every run, for any reason, then lists what the store holds for each customer.
+    _note = f"**Seed** sent {len(await ams_seed())} memories." if ams_seed_button.value else ""
+    _ = ams_refresh_button.value  # a Refresh press reruns this cell, to list memories extracted in the background
+
+    _tables = []
+    for _name, _owner in CAST.items():
+        _found = await ams_memories(_owner)
+        _rows = [f"| `{_m.id}` | {_m.text.replace('|', '&#124;')} | {_m.memory_type} |" for _m in _found]
+        _tables.append(mo.md("\n".join([f"**{_name}**, `ownerId` {_owner} ({len(_found)})", "", "| id | memory | type |", "|:--|:--|:--|", *_rows])))
+
+    mo.vstack([mo.md(_note), mo.hstack(_tables, widths="equal", align="start")])
+    return
 
 
 @app.cell
@@ -1687,29 +1710,6 @@ def am_store_fns(CAST, ams_client, asyncio, models):
         return sessions.items, memory_ids
 
     return ams_forget, ams_memories, ams_seed
-
-
-@app.cell(hide_code=True)
-async def am_store(
-    CAST,
-    ams_memories,
-    ams_refresh_button,
-    ams_seed,
-    ams_seed_button,
-    mo,
-):
-    # Seed writes the memories. Every run, for any reason, then lists what the store holds for each customer.
-    _note = f"**Seed** sent {len(await ams_seed())} memories." if ams_seed_button.value else ""
-    _ = ams_refresh_button.value  # a Refresh press reruns this cell, to list memories extracted in the background
-
-    _tables = []
-    for _name, _owner in CAST.items():
-        _found = await ams_memories(_owner)
-        _rows = [f"| {_m.text.replace('|', '&#124;')} | {_m.memory_type} |" for _m in _found]
-        _tables.append(mo.md("\n".join([f"**{_name}**, `ownerId` {_owner} ({len(_found)})", "", "| memory | type |", "|:--|:--|", *_rows])))
-
-    mo.vstack([mo.md(_note), mo.hstack(_tables, widths="equal", align="start")])
-    return
 
 
 @app.cell(hide_code=True)

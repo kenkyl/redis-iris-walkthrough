@@ -18,6 +18,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 10 | Clean up everything gives no progress while it runs | None (suggestion only) |
 | 11 | A LangCache outage shows only an error type | `lcs_answer`: the error shows LangCache's `detail` |
 | 12 | Chapter 3's Create doesn't show what it sent | `cr_create`: the requests Create made, and the data_model's fields |
+| 13 | Chapter 4's Seed result sits below 60 lines of code | `am_store` moved under the buttons; its tables gain an `id` column |
 
 ---
 
@@ -103,3 +104,11 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 
 - **Seen:** After **Create**, the result shows the surface, the agent key and the tool list, but not the requests behind them or the data model that went out. Step 2's text describes them, but the reader can't see them.
 - **Change:** `cr_create` runs `crs_create_surface()` inside `recording()`, like Chapter 2's **Ask**. The result then lists each request with its status and time, plus entity and record count for the imports. An accordion, "The data_model Create sent", holds an entity | field | type | index | key table built from `crs_data_model`. No request or reply bodies are shown: the create body holds the database password, and the agent key's reply holds the key.
+
+### 13. Chapter 4's Seed result sits below 60 lines of code
+
+- **Seen:** After **Seed**, nothing new appears under the button. The memory tables are about 60 lines further down, below the `am_connect` and `am_store_fns` code, so Seed looks like it did nothing.
+- **Cause:** `am_store`, which draws the tables, comes after the two code cells in the file, and marimo shows cells in file order.
+- **Change:**
+  - `am_store` now comes right after `am_title`, so the tables sit under **Seed** and **Refresh**. This matches Chapter 3, where `cr_create` follows its buttons and `cr_connect` comes after. The code cells stay visible, and nothing runs differently.
+  - The tables gain an `id` column. Seeded rows show the app's ids (`c001-seed-1`), and extracted rows show the service's. The Try it now asks the reader to check that a second Seed leaves the ids unchanged.
