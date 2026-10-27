@@ -1844,14 +1844,15 @@ def am_chat(ams_owner, ams_turn, mo, recording, redis):
     ams_chatbot = mo.ui.chat(
         _turn,
         prompts=[
+            "I'm bringing my dog Juniper on the trip.",
             "Which sleeping bag should I get for the trip?",
             "How do I wash my sleeping bag after the trip?",
             "Where's my tent?",
-            "I'm bringing my dog Juniper on the trip.",
         ],
         max_height=520,
     )
-    return ams_chatbot, ams_log
+    ams_poll = mo.ui.refresh(default_interval="15s")  # read by am_learned, so an extracted memory shows up without a Refresh
+    return ams_chatbot, ams_log, ams_poll
 
 
 @app.cell(hide_code=True)
@@ -1881,12 +1882,12 @@ async def am_pane(
     _try_it = mo.callout(mo.md("""
     After **Seed**, chat as Priya. Type `/` to open the starter prompts (the menu lists them alphabetically) and send them in the order below. The pane beside the chat shows each turn's recall, prompt, tool calls, and session. The assistant answers from Chapter 1's articles, so press **Create** there first, or again if the articles have expired.
 
-    1. "Which sleeping bag should I get for the trip?" Look for an answer that weighs her memories and the temperature-rating article. Does the pane show a catalog lookup?
-    2. "How do I wash my sleeping bag after the trip?" Chapter 2's cache served Priya the down answer for her synthetic bag. Here, look for synthetic care, and for the recalled memory behind it.
-    3. "Where's my tent?" Look for a `filter_order` call for `C001`. It needs Chapter 3's surface. O1001 is `shipped`.
-    4. "I'm bringing my dog Juniper on the trip." This is a new fact. Wait up to five minutes, then press **Refresh** in step 1 to see whether the service extracted it.
+    1. "I'm bringing my dog Juniper on the trip." This is a new fact, and the service extracts it in the background, within about five minutes. **Learned from this chat**, under the chat, checks for it every 15 seconds while you send the next three.
+    2. "Which sleeping bag should I get for the trip?" Look for an answer that weighs her memories and the temperature-rating article. Does the pane show a catalog lookup?
+    3. "How do I wash my sleeping bag after the trip?" Chapter 2's cache served Priya the down answer for her synthetic bag. Here, look for synthetic care, and for the recalled memory behind it.
+    4. "Where's my tent?" Look for a `filter_order` call for `C001`. It needs Chapter 3's surface. O1001 is `shipped`.
 
-    Then switch **Chat as** to Tom, which starts a new session, and send the first prompt again. Only his memories can come back, and the pane shows what the same search finds for Priya, which the assistant never sends.
+    Then switch **Chat as** to Tom, which starts a new session, and send the sleeping bag prompt again. Only his memories can come back, and the pane shows what the same search finds for Priya, which the assistant never sends.
     """), kind="success", title="Try it")
 
     if not ams_log:
@@ -1927,6 +1928,17 @@ async def am_pane(
         _chat = mo.vstack([_chat])
 
     mo.vstack([mo.md("## Step 4. Run the whole turn"), _try_it, mo.hstack([_chat, _data], widths=[5, 6], gap=1.5, align="start")], gap=0.75)
+    return
+
+
+@app.cell(hide_code=True)
+async def am_learned(ams_chatbot, ams_client, ams_poll, ams_session_id, mo):
+    # The long-term memories the service extracted from this chat's session. Each ams_poll tick and each message rerun this cell, so extraction shows up on its own.
+    _ = ams_poll.value
+    mo.stop(not ams_chatbot.value, mo.md("**Learned from this chat** starts checking after your first message."))
+    _found = await ams_client.search_long_term_memory_async(request={"filter": {"sessionId": {"eq": ams_session_id}}, "limit": 100})
+    _lines = "\n".join(f"- {_m.text} ({_m.memory_type})" for _m in _found.items) or "- nothing yet: extraction can take up to five minutes"
+    mo.vstack([mo.hstack([mo.md(f"**Learned from this chat**, session `{ams_session_id}`, checked every 15 seconds"), ams_poll], justify="start"), mo.md(_lines)])
     return
 
 

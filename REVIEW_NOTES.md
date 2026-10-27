@@ -19,6 +19,7 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 | 11 | A LangCache outage shows only an error type | `lcs_answer`: the error shows LangCache's `detail` |
 | 12 | Chapter 3's Create doesn't show what it sent | `cr_create`: the requests Create made, and the data_model's fields |
 | 13 | Chapter 4's Seed result sits below 60 lines of code | `am_store` moved under the buttons; its tables gain an `id` column |
+| 14 | Chapter 4 asks the reader to wait five minutes, then Refresh | `am_learned`: this chat's extracted memories, checked every 15 s; the Juniper prompt goes first |
 
 ---
 
@@ -112,3 +113,11 @@ Feedback from a walkthrough of `notebooks/learn_iris_101.py`. Each note says wha
 - **Change:**
   - `am_store` now comes right after `am_title`, so the tables sit under **Seed** and **Refresh**. This matches Chapter 3, where `cr_create` follows its buttons and `cr_connect` comes after. The code cells stay visible, and nothing runs differently.
   - The tables gain an `id` column. Seeded rows show the app's ids (`c001-seed-1`), and extracted rows show the service's. The Try it now asks the reader to check that a second Seed leaves the ids unchanged.
+
+### 14. Chapter 4 asks the reader to wait five minutes, then Refresh
+
+- **Seen:** The Try it's last prompt (Juniper) says "Wait up to five minutes, then press **Refresh** in step 1". The reader waits with nothing to watch, then scrolls back up and searches two tables for the new memory. In a webinar that's dead air.
+- **Cause:** Extraction runs in the background. SDK 0.4.1 can't trigger it or report its progress, but it can find the result: an extracted memory carries its `session_id`, and search accepts a `sessionId` filter.
+- **Change:**
+  - A new cell, `am_learned`, under the chat: "Learned from this chat" lists the long-term memories from this chat's session. It's driven by `ams_poll = mo.ui.refresh(default_interval="15s")` (in `am_chat`), and it waits for the chat's first message, so opening the notebook sends nothing. It's a separate cell so that each tick reruns a single search, not the pane's three service calls and embedding.
+  - The Juniper prompt now goes first, in the Try it and in `prompts`, so extraction runs while the reader sends the other three. The Tom line now says "send the sleeping bag prompt again".
